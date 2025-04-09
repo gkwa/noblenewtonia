@@ -1,0 +1,148 @@
+#+TITLE: Noble Newtonia
+#+AUTHOR:
+#+DATE:
+
+* Noble Newtonia
+
+A command-line utility for decompressing data that was compressed with the [[https://github.com/nodeca/pako][pako]] library.
+
+** Installation
+
+#+begin_src bash
+# Install globally
+npm install -g .
+
+# Or using just
+just install-global
+#+end_src
+
+** Usage
+
+*** Basic Decompression
+
+#+begin_src bash
+# Decompress a file
+noblenewtonia -i compressed.dat -o decompressed.txt
+
+# Decompress stdin to stdout
+cat compressed.dat | noblenewtonia > decompressed.txt
+
+# Specify compression format
+noblenewtonia -f gzip -i compressed.dat -o decompressed.txt
+#+end_src
+
+*** Batch Processing
+
+Process a file containing base64-encoded compressed data, one entry per line:
+
+#+begin_src bash
+# Process a batch file, outputting each entry to a separate file
+noblenewtonia batch -i encoded-batch.txt -o ./output-dir
+
+# Customize output filenames
+noblenewtonia batch -i encoded-batch.txt -o ./output-dir -p "decoded_"
+
+# Output all entries to stdout
+noblenewtonia batch -i encoded-batch.txt -o -
+
+# Custom separator between stdout entries
+noblenewtonia batch -i encoded-batch.txt -o - --separator "\n=====\n"
+
+# Suppress all non-error output
+noblenewtonia batch -i encoded-batch.txt -o ./output-dir -q
+#+end_src
+
+*** JSON Processing
+
+Process a JSON file with items containing base64-encoded compressed HTML:
+
+#+begin_src bash
+# Process a JSON file, outputting to stdout in YAML format
+noblenewtonia parse-json -i input.json -o -
+
+# Output to a single YAML file
+noblenewtonia parse-json -i input.json -o output.yaml
+
+# Output each item to a separate YAML file in a directory
+noblenewtonia parse-json -i input.json -o output-dir/
+#+end_src
+
+The expected JSON format is an array of objects with 'rawHtml' and 'name' properties:
+
+#+begin_src json
+[
+  {
+    "rawHtml": "eNrtPIly4kiyv6LlzW7MxHSB...",
+    "name": "Product Name"
+  },
+  ...
+]
+#+end_src
+
+The output YAML format will be:
+
+#+begin_src yaml
+id: generated-id
+name: Product Name
+rawHtml: |
+  <decompressed HTML content>
+---
+id: another-id
+name: Another Product
+rawHtml: |
+  <decompressed HTML content>
+#+end_src
+
+** Options
+
+*** Common Options
+
+- ~-f, --format <format>~: Compression format (auto, deflate, raw, gzip)
+- ~-v, --verbose~: Enable verbose output
+- ~-q, --quiet~: Suppress all non-error output
+- ~-d, --debug~: Show detailed error information
+
+*** Single Decompression Options
+
+- ~-i, --input <file>~: Input file (defaults to stdin)
+- ~-o, --output <file>~: Output file (defaults to stdout)
+- ~-s, --string~: Output as string (UTF-8 to UTF-16 conversion)
+
+*** Batch Processing Options
+
+- ~-i, --input <file>~: Input file containing base64-encoded data (one per line)
+- ~-o, --output-dir <dir>~: Output directory for decompressed files (use '-' for stdout)
+- ~-p, --prefix <prefix>~: Filename prefix for output files (default: "decompressed_")
+- ~--separator <sep>~: Separator between entries when using stdout (default: "\n---\n")
+- ~-s, --summary~: Show summary statistics after processing
+
+*** JSON Processing Options
+
+- ~-i, --input <file>~: Input JSON file
+- ~-o, --output <output>~: Output file or directory (use '-' for stdout)
+- ~-s, --summary~: Show summary statistics after processing
+
+** Development
+
+#+begin_src bash
+# Install dependencies
+just install
+
+# Run tests
+just test
+
+# Run benchmarks
+just benchmark
+
+# Create and test various data formats
+just create-test-data        # Create basic test data
+just create-batch-test       # Create batch test data
+just create-json-test        # Create JSON test data
+just test-json-stdout        # Test JSON stdout output
+just test-json-file          # Test JSON file output
+just test-json-dir           # Test JSON directory output
+#+end_src
+
+** License
+
+MIT

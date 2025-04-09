@@ -1,0 +1,29 @@
+{
+  "name": "noblenewtonia",
+  "version": "1.0.0",
+  "description": "A tool to decompress pako-compressed data",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node --test src/test",
+    "lint": "eslint .",
+    "benchmark": "node src/benchmark/index.js"
+  },
+  "keywords": ["pako", "decompression", "deflate", "zlib"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "js-yaml": "^4.1.0",
+    "pako": "^2.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.24.0",
+    "nodemon": "^3.1.9"
+  },
+  "bin": {
+    "noblenewtonia": "./src/index.js"
+  }
+}
