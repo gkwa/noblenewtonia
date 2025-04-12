@@ -80,15 +80,17 @@ async function processJsonCommand(options) {
       itemsToProcess = jsonData.Items.map((item) => {
         // Extract the product data and category from the nested structure
         const category = item.category && item.category.Value ? item.category.Value : null
+        const domain = item.domain && item.domain.Value ? item.domain.Value : null
 
         if (item.product && item.product.Value) {
           return {
             type: "nested",
             data: item.product.Value,
             category: category,
+            domain: domain,
           }
         }
-        return { type: "unknown", data: item, category: category }
+        return { type: "unknown", data: item, category: category, domain: domain }
       })
     } else if (Array.isArray(jsonData) && jsonData.length > 0) {
       // Old structure: [ ... ]
@@ -97,6 +99,7 @@ async function processJsonCommand(options) {
         type: "flat",
         data: item,
         category: item.category || null,
+        domain: item.domain || null,
       }))
     } else {
       // Handle empty arrays or null Items
@@ -156,10 +159,10 @@ async function processJsonCommand(options) {
       const item = itemsToProcess[i]
 
       try {
-        const { type, data, category } = item
+        const { type, data, category, domain } = item
 
         // Extract the relevant data based on the item type
-        let rawHtml, name, id
+        let rawHtml, name, id, url, imageUrl
 
         if (type === "flat") {
           // Direct access for old format
@@ -169,6 +172,8 @@ async function processJsonCommand(options) {
           rawHtml = data.rawHtml
           name = data.name || "Unknown"
           id = data.id
+          url = data.url || null
+          imageUrl = data.imageUrl || null
         } else if (type === "nested") {
           // Nested structure from new format
           if (data.rawHtml && typeof data.rawHtml === "string") {
@@ -196,6 +201,24 @@ async function processJsonCommand(options) {
           } else if (data.id && data.id.Value) {
             id = data.id.Value
           }
+
+          // Get URL
+          if (typeof data.url === "string") {
+            url = data.url
+          } else if (data.url && data.url.Value) {
+            url = data.url.Value
+          } else {
+            url = null
+          }
+
+          // Get imageUrl
+          if (typeof data.imageUrl === "string") {
+            imageUrl = data.imageUrl
+          } else if (data.imageUrl && data.imageUrl.Value) {
+            imageUrl = data.imageUrl.Value
+          } else {
+            imageUrl = null
+          }
         } else {
           throw new Error("Unknown item type")
         }
@@ -215,6 +238,8 @@ async function processJsonCommand(options) {
           id: id || formatFilename(name),
           name: name,
           category: category || null,
+          url: url || (domain ? `https://${domain}` : null),
+          imageUrl: imageUrl || null,
           rawHtml: typeof decompressed === "string" ? decompressed : decompressed.toString("utf8"),
         })
 
