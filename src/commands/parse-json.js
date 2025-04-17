@@ -22,6 +22,7 @@ export function setupParseJsonCommand(program) {
     .option("-q, --quiet", "suppress all non-error output")
     .option("-d, --debug", "show detailed error information")
     .option("-s, --summary", "show summary statistics after processing")
+    .option("--sample <count>", "process only a random sample of items", parseInt)
     .action(processJsonCommand)
 }
 
@@ -142,6 +143,16 @@ async function processJsonCommand(options) {
     }
 
     logVerbose(`Found ${itemsToProcess.length} items to process`, options)
+
+    // Apply sampling if requested
+    if (options.sample && options.sample > 0 && options.sample < itemsToProcess.length) {
+      logVerbose(
+        `Sampling ${options.sample} items from ${itemsToProcess.length} total items`,
+        options,
+      )
+      itemsToProcess = sampleItems(itemsToProcess, options.sample)
+      logVerbose(`Selected ${itemsToProcess.length} items for processing`, options)
+    }
 
     // Statistics for summary report
     const stats = {
@@ -366,4 +377,36 @@ function formatBytes(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+}
+
+/**
+ * Sample a specified number of items from an array
+ * @param {Array} items - Array of items to sample from
+ * @param {number} sampleSize - Number of items to sample
+ * @returns {Array} Sampled items
+ */
+function sampleItems(items, sampleSize) {
+  if (sampleSize >= items.length) {
+    return items
+  }
+
+  // Create a copy of the array to avoid modifying the original
+  const itemsCopy = [...items]
+  const sampledItems = []
+
+  // Fisher-Yates shuffle algorithm + take first n elements
+  for (let i = 0; i < sampleSize; i++) {
+    // Generate random index between i and array length - 1
+    const randomIndex = i + Math.floor(Math.random() * (itemsCopy.length - i))
+
+    // Swap elements at positions i and randomIndex
+    const temp = itemsCopy[i]
+    itemsCopy[i] = itemsCopy[randomIndex]
+    itemsCopy[randomIndex] = temp
+
+    // Add the item at position i to our sampledItems
+    sampledItems.push(itemsCopy[i])
+  }
+
+  return sampledItems
 }

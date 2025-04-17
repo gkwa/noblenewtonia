@@ -81,6 +81,12 @@ test-json-stdout: create-json-test
     cat test-json-output.yaml
     rm test-json-output.yaml
 
+# Test JSON processing with sampling
+test-json-sample: create-json-test
+    just run parse-json -i test-data/test-json.json --sample 2 -o - > test-json-sample.yaml
+    cat test-json-sample.yaml
+    rm test-json-sample.yaml
+
 # Test JSON processing (old format) - output to stdout
 test-json-old-stdout: create-json-test
     just run parse-json -i test-data/test-json-old.json -o - > test-json-old-output.yaml
@@ -111,4 +117,4 @@ benchmark:
 clean:
     rm -f test-data.deflate
     rm -rf test-data test-output test-json-output
-    rm -f test-stdout.txt test-stdout-sep.txt test-json-output.yaml test-json-old-output.yaml test-json-stdin.yaml
+    rm -f test-stdout.txt test-stdout-sep.txt test-json-output.yaml test-json-old-output.yaml test-json-stdin.yaml test-json-sample.yaml
