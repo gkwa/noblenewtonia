@@ -79,19 +79,48 @@ async function processJsonCommand(options) {
       // New structure: { Items: [ ... ] }
       logVerbose(`Found new nested JSON structure with Items array`, options)
       itemsToProcess = jsonData.Items.map((item) => {
-        // Extract the product data and category from the nested structure
-        const category = item.category && item.category.Value ? item.category.Value : null
-        const domain = item.domain && item.domain.Value ? item.domain.Value : null
-
-        if (item.product && item.product.Value) {
-          return {
-            type: "nested",
-            data: item.product.Value,
-            category: category,
-            domain: domain,
-          }
+        const extractValue = (obj) => {
+          if (!obj) return null
+          return obj.Value !== undefined ? obj.Value : obj
         }
-        return { type: "unknown", data: item, category: category, domain: domain }
+
+        // Extract all relevant fields from the nested structure
+        const category = extractValue(item.category)
+        const domain = extractValue(item.domain)
+        const entityType = extractValue(item.entity_type)
+        const id = extractValue(item.id)
+        const imageUrl = extractValue(item.imageUrl)
+        const isSponsored = extractValue(item.isSponsored)
+        const name = extractValue(item.name)
+        const originalPrice = extractValue(item.originalPrice)
+        const price = extractValue(item.price)
+        const rawHtml = extractValue(item.rawHtml)
+        const rawTextContent = extractValue(item.rawTextContent)
+        const shipping = extractValue(item.shipping)
+        const timestamp = extractValue(item.timestamp)
+        const ttl = extractValue(item.ttl)
+        const url = extractValue(item.url)
+
+        return {
+          type: "nested",
+          data: {
+            id,
+            name,
+            category,
+            domain,
+            entityType,
+            imageUrl,
+            isSponsored,
+            originalPrice,
+            price,
+            rawHtml,
+            rawTextContent,
+            shipping,
+            timestamp,
+            ttl,
+            url,
+          },
+        }
       })
     } else if (Array.isArray(jsonData) && jsonData.length > 0) {
       // Old structure: [ ... ]
@@ -99,8 +128,6 @@ async function processJsonCommand(options) {
       itemsToProcess = jsonData.map((item) => ({
         type: "flat",
         data: item,
-        category: item.category || null,
-        domain: item.domain || null,
       }))
     } else {
       // Handle empty arrays or null Items
@@ -170,65 +197,49 @@ async function processJsonCommand(options) {
       const item = itemsToProcess[i]
 
       try {
-        const { type, data, category, domain } = item
+        const { type, data } = item
 
         // Extract the relevant data based on the item type
-        let rawHtml, name, id, url, imageUrl
+        let rawHtml, processedItem
 
         if (type === "flat") {
           // Direct access for old format
           if (!data.rawHtml) {
             throw new Error("Item missing required rawHtml field")
           }
+
           rawHtml = data.rawHtml
-          name = data.name || "Unknown"
-          id = data.id
-          url = data.url || null
-          imageUrl = data.imageUrl || null
+
+          processedItem = {
+            id: data.id || formatFilename(data.name || "Unknown"),
+            name: data.name || "Unknown",
+            category: data.category || null,
+            url: data.url || null,
+            imageUrl: data.imageUrl || null,
+          }
         } else if (type === "nested") {
-          // Nested structure from new format
-          if (data.rawHtml && typeof data.rawHtml === "string") {
-            // Direct string
-            rawHtml = data.rawHtml
-          } else if (data.rawHtml && data.rawHtml.Value) {
-            // Value property
-            rawHtml = data.rawHtml.Value
-          } else {
+          // New structure with direct field access
+          if (!data.rawHtml) {
             throw new Error("Item missing required rawHtml field")
           }
 
-          // Get name from different possible locations
-          if (typeof data.name === "string") {
-            name = data.name
-          } else if (data.name && data.name.Value) {
-            name = data.name.Value
-          } else {
-            name = "Unknown"
-          }
+          rawHtml = data.rawHtml
 
-          // Get ID
-          if (typeof data.id === "string") {
-            id = data.id
-          } else if (data.id && data.id.Value) {
-            id = data.id.Value
-          }
-
-          // Get URL
-          if (typeof data.url === "string") {
-            url = data.url
-          } else if (data.url && data.url.Value) {
-            url = data.url.Value
-          } else {
-            url = null
-          }
-
-          // Get imageUrl
-          if (typeof data.imageUrl === "string") {
-            imageUrl = data.imageUrl
-          } else if (data.imageUrl && data.imageUrl.Value) {
-            imageUrl = data.imageUrl.Value
-          } else {
-            imageUrl = null
+          processedItem = {
+            id: data.id || formatFilename(data.name || "Unknown"),
+            name: data.name || "Unknown",
+            category: data.category || null,
+            domain: data.domain || null,
+            entityType: data.entityType || null,
+            url: data.url || (data.domain ? `https://${data.domain}` : null),
+            imageUrl: data.imageUrl || null,
+            price: data.price || null,
+            originalPrice: data.originalPrice || null,
+            shipping: data.shipping || null,
+            isSponsored: data.isSponsored !== undefined ? data.isSponsored : null,
+            timestamp: data.timestamp || null,
+            ttl: data.ttl || null,
+            rawTextContent: data.rawTextContent || null,
           }
         } else {
           throw new Error("Unknown item type")
@@ -244,15 +255,12 @@ async function processJsonCommand(options) {
         // Decompress the data
         const decompressed = await decompressData(decodedData, options)
 
+        // Add decompressed HTML to the processed item
+        processedItem.rawHtml =
+          typeof decompressed === "string" ? decompressed : decompressed.toString("utf8")
+
         // Add to processed items
-        processedItems.push({
-          id: id || formatFilename(name),
-          name: name,
-          category: category || null,
-          url: url || (domain ? `https://${domain}` : null),
-          imageUrl: imageUrl || null,
-          rawHtml: typeof decompressed === "string" ? decompressed : decompressed.toString("utf8"),
-        })
+        processedItems.push(processedItem)
 
         // Update statistics
         stats.totalProcessed++

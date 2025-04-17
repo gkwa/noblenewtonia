@@ -54,7 +54,7 @@ console.log(`Created old format test JSON file at: ${oldFormatFile}`)
 // 2. New format (nested structure)
 const newFormatFile = path.join(outputDir, "test-json.json")
 const jsonItemsNew = {
-  Items: samples.map((sample) => {
+  Items: samples.map((sample, index) => {
     // Compress with pako deflate
     const compressed = deflate(sample.html)
 
@@ -71,27 +71,41 @@ const jsonItemsNew = {
       entity_type: {
         Value: "category",
       },
-      product: {
-        Value: {
-          compressed: {
-            Value: true,
-          },
-          id: {
-            Value: `test-id-${Math.floor(Math.random() * 1000)}`,
-          },
-          imageUrl: {
-            Value: "https://example.com/image.jpg",
-          },
-          name: {
-            Value: sample.name,
-          },
-          rawHtml: {
-            Value: base64,
-          },
-        },
+      id: {
+        Value: `test-id-${Math.floor(Math.random() * 1000)}`,
+      },
+      imageUrl: {
+        Value: "https://example.com/image.jpg",
+      },
+      isSponsored: {
+        Value: index === 1, // Make the second item sponsored
+      },
+      name: {
+        Value: sample.name,
+      },
+      originalPrice: {
+        Value: "$5.99",
+      },
+      price: {
+        Value: "$4.99",
+      },
+      rawHtml: {
+        Value: base64,
+      },
+      rawTextContent: {
+        Value: `Plain text version of ${sample.name}`,
+      },
+      shipping: {
+        Value: "Free shipping with Prime",
       },
       timestamp: {
         Value: new Date().toISOString(),
+      },
+      ttl: {
+        Value: (Math.floor(Date.now() / 1000) + 86400).toString(),
+      },
+      url: {
+        Value: `https://example.com/product-${index + 1}`,
       },
     }
   }),

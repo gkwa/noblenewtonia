@@ -126,18 +126,47 @@ describe("Parse JSON Command", () => {
           category: {
             Value: "test-category",
           },
-          product: {
-            Value: {
-              rawHtml: {
-                Value: base64,
-              },
-              name: {
-                Value: "Test Product 1",
-              },
-              id: {
-                Value: "test-id-1",
-              },
-            },
+          domain: {
+            Value: "www.example.com",
+          },
+          entity_type: {
+            Value: "category",
+          },
+          id: {
+            Value: "test-id-1",
+          },
+          imageUrl: {
+            Value: "https://example.com/image.jpg",
+          },
+          isSponsored: {
+            Value: false,
+          },
+          name: {
+            Value: "Test Product 1",
+          },
+          originalPrice: {
+            Value: "$5.99",
+          },
+          price: {
+            Value: "$4.99",
+          },
+          rawHtml: {
+            Value: base64,
+          },
+          rawTextContent: {
+            Value: "Plain text version of Test Product 1",
+          },
+          shipping: {
+            Value: "Free shipping",
+          },
+          timestamp: {
+            Value: new Date().toISOString(),
+          },
+          ttl: {
+            Value: (Math.floor(Date.now() / 1000) + 86400).toString(),
+          },
+          url: {
+            Value: "https://example.com/product-1",
           },
         },
       ],
@@ -224,7 +253,15 @@ describe("Parse JSON Command", () => {
     assert.equal(item.id, "test-id-1", "Item should have correct ID")
     assert.equal(item.name, "Test Product 1", "Item should have correct name")
     assert.equal(item.category, "test-category", "Item should have correct category")
+    assert.equal(item.domain, "www.example.com", "Item should have correct domain")
+    assert.equal(item.price, "$4.99", "Item should have correct price")
+    assert.equal(item.originalPrice, "$5.99", "Item should have correct original price")
+    assert.equal(item.shipping, "Free shipping", "Item should have correct shipping info")
+    assert.equal(item.isSponsored, false, "Item should have correct sponsored status")
     assert.ok(item.rawHtml.includes("<h1>Test HTML</h1>"), "Item should have decompressed HTML")
+    assert.ok(item.url.includes("example.com"), "Item should have correct URL")
+    assert.ok(item.imageUrl.includes("example.com"), "Item should have correct image URL")
+    assert.ok(item.rawTextContent.includes("Test Product 1"), "Item should have raw text content")
   })
 
   it("should output to a single file when directory is specified", async () => {
